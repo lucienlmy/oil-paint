@@ -13,12 +13,19 @@
         background: rgba(28, 20, 18, 0.55); padding: 8px 16px; border-radius: 3px; transition: opacity 2s; pointer-events: none; white-space: nowrap; }
       #hint.faded { opacity: 0; }
       #hint.off { display: none; }
+      html[data-scene='aurora'] body { background: #061219; }
+      html[data-scene='aurora'] #loading { color: #9fd8c4; }
+      #scenes { position: fixed; left: 18px; bottom: 18px; display: flex; gap: 6px; }
+      #scenes button { font: 13px/1 Georgia, serif; letter-spacing: 0.04em; color: #f3e3c3; background: rgba(28, 20, 18, 0.55); border: 1px solid rgba(243, 227, 195, 0.25);
+        padding: 8px 12px; border-radius: 3px; cursor: pointer; }
+      #scenes button.on { background: rgba(243, 227, 195, 0.9); color: #1c1512; cursor: default; }
     </style>
   </head>
   <body>
     <div id="view"></div>
     <div id="loading">Mixing paint</div>
+    <div id="scenes"><button data-scene="aurora" tabindex="-1">Aurora</button><button data-scene="autumn" tabindex="-1">Autumn wood</button></div>
     <div id="hint">Click to look · WASD move · Shift sprint · Space jump · wheel to step back</div>
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/boot.js"></script>
   </body>
 </html>

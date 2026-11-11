@@ -137,7 +137,7 @@ void main() {
   if (vGlaze.w > 0.5) {
     // the wanderer's shadow: a soft plum glaze that slides over the paint and follows its streaks a little
     float lit = figSunSoft(vGlaze.xyz + vec3((t.b - 0.5) * 0.012, (t.r - 0.5) * 0.012, 0.0));
-    col = mix(col * vec3(0.5, 0.38, 0.46) + vec3(0.03, 0.02, 0.06), col, lit);
+    col = mix(col * uGlazeMul + uGlazeAdd, col, lit);
   }
   col *= mix(0.95, 1.04, t.r);
   col *= 1.0 + rake * 1.25 * uImpasto;

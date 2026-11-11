@@ -15,6 +15,7 @@ export class Follow {
     this.lift = 0.85;
     this.pivot = new THREE.Vector3();
     this.free = null; // { position, target }: a fixed view, for stills
+    this.sink = 0; // when the ground lifts the eye, how far the look comes down with it to keep him in the picture (0..1)
   }
 
   update(dt, target, look, zoom, castRay, groundAt) {
@@ -38,7 +39,8 @@ export class Follow {
     this.distance = free < this.distance ? damp(this.distance, free, 18, dt) : damp(this.distance, free, 2.5, dt);
     cam.position.copy(from).addScaledVector(back, this.distance);
     const floor = groundAt(cam.position.x, cam.position.z) + 0.45;
-    if (cam.position.y < floor) cam.position.y = floor;
-    cam.lookAt(from.x - back.x * 6, from.y - back.y * 6 + this.lift * k, from.z - back.z * 6);
+    let raised = 0;
+    if (cam.position.y < floor) { raised = floor - cam.position.y; cam.position.y = floor; }
+    cam.lookAt(from.x - back.x * 6, from.y - back.y * 6 + this.lift * k - raised * this.sink, from.z - back.z * 6);
   }
 }

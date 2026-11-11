@@ -12,6 +12,7 @@ const PAINT_FRAG = /* glsl */ `
 ${COMMON}
 uniform vec3 uL; uniform vec3 uM; uniform vec3 uS;
 uniform vec3 uL2; uniform vec3 uM2; uniform vec3 uS2;
+uniform vec3 uOwn; uniform vec3 uOwn2;
 uniform float uSplit;
 uniform float uGrain;
 in vec3 vWorld; in vec3 vN; in vec3 vBind;
@@ -24,22 +25,24 @@ void main() {
   float lit = sunAt(vWorld + Nn * 0.08) * clamp(dot(Nn, uSunDir) * 0.85 + 0.42, 0.0, 1.0);
   bool lower = vBind.y < uSplit + (n - 0.5) * 0.05;
   vec3 c = lower ? paint3(uL2, uM2, uS2, lit, n) : paint3(uL, uM, uS, lit, n);
-  // warm light thrown up by the leaves on the ground, cool light from the sky into the shade
-  c += vec3(0.1, 0.045, 0.0) * max(-Nn.y, 0.0) * (1.0 - lit);
+  // light thrown up by the ground (warm, off the leaves), cool light from the sky into the shade
+  c += uBounce * max(-Nn.y, 0.0) * (1.0 - lit);
   c = mix(c, c * vec3(0.86, 0.92, 1.18), (1.0 - lit) * max(Nn.y, 0.0) * 0.6);
   c *= 0.88 + 0.24 * m;
   if (!gl_FrontFacing) c *= 0.62;
+  c += (lower ? uOwn2 : uOwn) * uLampCol * lampAt(vWorld, Nn);
   outC = vec4(hazed(c, vWorld), 1.0);
 }
 `;
 
-function paint(shared, [L, M, S], { skinned = false, lower = null, split = -10, grain = 2.2 } = {}) {
+// A palette is [light, half-tone, shade] and, where a lamp is carried, the thing's own colour for its light to fall on.
+function paint(shared, [L, M, S, A = L], { skinned = false, lower = null, split = -10, grain = 2.2 } = {}) {
   const col = (c) => ({ value: new THREE.Color(...c) });
-  const [L2, M2, S2] = lower ?? [L, M, S];
+  const [L2, M2, S2, A2 = L2] = lower ?? [L, M, S, A];
   return new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3,
     side: THREE.DoubleSide,
-    uniforms: { ...shared, uL: col(L), uM: col(M), uS: col(S), uL2: col(L2), uM2: col(M2), uS2: col(S2), uSplit: { value: split }, uGrain: { value: grain } },
+    uniforms: { ...shared, uL: col(L), uM: col(M), uS: col(S), uL2: col(L2), uM2: col(M2), uS2: col(S2), uOwn: col(A), uOwn2: col(A2), uSplit: { value: split }, uGrain: { value: grain } },
     vertexShader: skinned ? /* glsl */ `
       #include <common>
       #include <skinning_pars_vertex>
@@ -68,16 +71,22 @@ function paint(shared, [L, M, S], { skinned = false, lower = null, split = -10, 
   });
 }
 
-// the palette he is painted with: light, half-tone, shade
-const CLOAK = [[0.24, 0.5, 0.74], [0.11, 0.27, 0.52], [0.07, 0.11, 0.3]];
-const HAT = [[1.0, 0.88, 0.52], [0.8, 0.62, 0.32], [0.45, 0.34, 0.27]];
-const SHIRT = [[0.97, 0.88, 0.68], [0.64, 0.54, 0.45], [0.29, 0.25, 0.32]];
-const TROUSERS = [[0.6, 0.42, 0.27], [0.36, 0.25, 0.2], [0.18, 0.13, 0.18]];
-const SKIN = [[1.0, 0.78, 0.58], [0.76, 0.51, 0.39], [0.4, 0.26, 0.28]];
-const BOOTS = [[0.48, 0.3, 0.18], [0.25, 0.16, 0.13], [0.12, 0.08, 0.12]];
-const HAIR = [[0.42, 0.28, 0.18], [0.2, 0.14, 0.12], [0.09, 0.07, 0.09]];
+// the palettes he is painted with by day: light, half-tone, shade
+export const DAY = {
+  CLOAK: [[0.24, 0.5, 0.74], [0.11, 0.27, 0.52], [0.07, 0.11, 0.3]],
+  HAT: [[1.0, 0.88, 0.52], [0.8, 0.62, 0.32], [0.45, 0.34, 0.27]],
+  SHIRT: [[0.97, 0.88, 0.68], [0.64, 0.54, 0.45], [0.29, 0.25, 0.32]],
+  TROUSERS: [[0.6, 0.42, 0.27], [0.36, 0.25, 0.2], [0.18, 0.13, 0.18]],
+  SKIN: [[1.0, 0.78, 0.58], [0.76, 0.51, 0.39], [0.4, 0.26, 0.28]],
+  BOOTS: [[0.48, 0.3, 0.18], [0.25, 0.16, 0.13], [0.12, 0.08, 0.12]],
+  HAIR: [[0.42, 0.28, 0.18], [0.2, 0.14, 0.12], [0.09, 0.07, 0.09]],
+  EYES: [[0.2, 0.15, 0.14], [0.12, 0.09, 0.1], [0.06, 0.05, 0.07]],
+};
 
-export async function createFigure(shared, onProgress) {
+/** palettes: any of DAY's to paint him otherwise (another hour, other clothes). */
+export async function createFigure(shared, onProgress, palettes = {}) {
+  const { CLOAK, HAT, SHIRT, TROUSERS, SKIN, BOOTS, HAIR, EYES } = { ...DAY, ...palettes };
+  const own = (p) => `vec3(${p[3] ?? p[0]})`;
   const man = await loadMan({ base: './figure/', onProgress });
   for (const mesh of man.meshes) {
     const name = mesh.name + ' ' + (mesh.material?.name ?? '');
@@ -85,7 +94,7 @@ export async function createFigure(shared, onProgress) {
     mesh.material = /casualsuit/.test(name) ? paint(shared, SHIRT, { skinned: true, lower: TROUSERS, split: 0.98, grain: 2.6 })
       : /shoes/.test(name) ? paint(shared, BOOTS, { skinned: true })
       : /short01/.test(name) ? paint(shared, HAIR, { skinned: true })
-      : /high-poly/.test(name) ? paint(shared, [[0.2, 0.15, 0.14], [0.12, 0.09, 0.1], [0.06, 0.05, 0.07]], { skinned: true })
+      : /high-poly/.test(name) ? paint(shared, EYES, { skinned: true })
       : paint(shared, SKIN, { skinned: true });
     mesh.layers.enable(1);
     mesh.frustumCulled = false;
@@ -121,6 +130,7 @@ export async function createFigure(shared, onProgress) {
           vec3 Nn = normalize(mat3(uHat) * aNrm);
           float lit = sunAt(P + Nn * 0.1) * clamp(dot(Nn, uSunDir) * 0.85 + 0.42, 0.0, 1.0);
           vec3 c = jitter(paint3(vec3(${HAT[0]}), vec3(${HAT[1]}), vec3(${HAT[2]}), lit, r.x), r.yzw, 0.4);
+          c += ${own(HAT)} * uLampCol * lampAt(P, Nn);
           d.pos = P; d.dir = mat3(uHat) * aDir;
           d.size = vec2(0.065, 0.15) * (0.8 + 0.5 * r.y);
           d.turnabout = 1.0;
@@ -166,8 +176,9 @@ export async function createFigure(shared, onProgress) {
         if (dot(Nn, cameraPosition - aPos) < 0.0) Nn = -Nn;
         float lit = sunAt(aPos + Nn * 0.1) * clamp(dot(Nn, uSunDir) * 0.85 + 0.42, 0.0, 1.0);
         vec3 c = paint3(vec3(${CLOAK[0]}), vec3(${CLOAK[1]}), vec3(${CLOAK[2]}), lit, r.x);
-        c += vec3(0.1, 0.045, 0.0) * max(-Nn.y, 0.0) * (1.0 - lit);
+        c += uBounce * max(-Nn.y, 0.0) * (1.0 - lit);
         c = jitter(c, r.yzw, 0.35);
+        c += ${own(CLOAK)} * uLampCol * lampAt(aPos, Nn);
         d.pos = aPos; d.dir = aDir;
         d.size = vec2(0.105, 0.19) * (0.8 + 0.4 * r.y);
         d.turnabout = 1.0;

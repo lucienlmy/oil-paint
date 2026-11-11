@@ -1,6 +1,6 @@
-// Where the sun reaches. The wood's shade is drawn once, from the sun, into a depth picture that every dab asks
-// about for itself; the wanderer's own shadow is a second, small picture that follows them and is redrawn each
-// frame.
+// Where the sun reaches. The still world's shade is drawn once, from the sun, into a depth picture that every dab
+// asks about for itself; the wanderer's own shadow is a second, small picture that follows them and is redrawn
+// each frame.
 import * as THREE from 'three';
 import { SUN } from './common.js';
 
@@ -14,18 +14,23 @@ function depthTarget(w, h) {
   return target;
 }
 
-export function createShade(renderer, shared, woodShade) {
-  // the wood, once: wide across the sun's direction, and only as tall as the trees need
-  const wood = depthTarget(4096, 2560);
-  const sunCam = new THREE.OrthographicCamera(-165, 165, 104, -104, 10, 800);
-  const centre = new THREE.Vector3(0, 11, -8);
-  sunCam.position.copy(centre).addScaledVector(SUN, 400);
+/**
+ * still: a scene of the things that never move. The rest says where the sun is and how much of the world the
+ * picture of its shade has to hold: `box` is half its width and half its height as the sun sees it, round `centre`.
+ * The defaults are the autumn wood's.
+ */
+export function createShade(renderer, shared, still, { sun = SUN, size = [4096, 2560], box = [165, 104], centre: at = [0, 11, -8], back = 400, near = 10, far = 800 } = {}) {
+  // the still world, once: wide across the sun's direction, and only as tall as it needs
+  const wood = depthTarget(size[0], size[1]);
+  const sunCam = new THREE.OrthographicCamera(-box[0], box[0], box[1], -box[1], near, far);
+  const centre = new THREE.Vector3(...at);
+  sunCam.position.copy(centre).addScaledVector(sun, back);
   sunCam.lookAt(centre);
   sunCam.updateMatrixWorld(true);
   sunCam.updateProjectionMatrix();
   renderer.setRenderTarget(wood);
   renderer.clear();
-  renderer.render(woodShade, sunCam);
+  renderer.render(still, sunCam);
   renderer.setRenderTarget(null);
   shared.tTreeShade.value = wood.depthTexture;
   shared.uTreeShadeMat.value.copy(BIAS).multiply(sunCam.projectionMatrix).multiply(sunCam.matrixWorldInverse);
@@ -38,7 +43,7 @@ export function createShade(renderer, shared, woodShade) {
   const depthOnly = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
   return {
     update(scene, at) {
-      figCam.position.set(at.x, at.y + 1.0, at.z).addScaledVector(SUN, 30);
+      figCam.position.set(at.x, at.y + 1.0, at.z).addScaledVector(sun, 30);
       figCam.lookAt(at.x, at.y + 1.0, at.z);
       figCam.updateMatrixWorld(true);
       shared.uFigShadeMat.value.copy(BIAS).multiply(figCam.projectionMatrix).multiply(figCam.matrixWorldInverse);

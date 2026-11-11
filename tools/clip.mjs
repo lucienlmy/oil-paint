@@ -23,7 +23,11 @@ const frames = resolve(here, 'shots/work/clip');
 rmSync(frames, { recursive: true, force: true });
 mkdirSync(frames, { recursive: true });
 
-const root = resolve(here, 'dist');
+const root = resolve(here, flag('dist', 'dist'));
+// --at "x,z,fx,fz": he stands there (with --walk 1, walks on from there) instead of running the wood's way
+// --cam "ex,eh,ez,tx,th,tz": a fixed eye eh metres above its ground, looking th metres above that same ground
+const at = flag('at') ? flag('at').split(',').map(Number) : null;
+const cam = flag('cam') ? flag('cam').split(',').map(Number) : null;
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.glb': 'model/gltf-binary', '.wasm': 'application/wasm' };
 const server = createServer((req, res) => {
   let file = normalize(join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname)));
@@ -37,10 +41,29 @@ const exe = process.env.CHROME; // a Chromium of your own; without it, Playwrigh
 const browser = await chromium.launch({ executablePath: exe, headless: true, args: ['--mute-audio', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-gpu'] });
 const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
 page.on('pageerror', (e) => console.log('pageerror', e.message));
-await page.goto(`http://127.0.0.1:${server.address().port}/?capture&nopad&${flag('query', '')}`);
+await page.goto(`http://127.0.0.1:${server.address().port}/?capture&nopad&${/scene=/.test(flag('query', '')) ? '' : 'scene=autumn&'}${flag('query', '')}`);
 await page.waitForFunction(() => window.lab?.ready, null, { timeout: 120000 });
 
-await page.evaluate((from) => {
+if (at) await page.evaluate(([at, cam, walk, straight, stop, spin]) => {
+  const L = window.lab;
+  let clock = 0;
+  L.teleport(...at);
+  if (cam) { const g = L.heightAt(cam[0], cam[2]); L.view([cam[0], g + cam[1], cam[2]], [cam[3], g + cam[4], cam[5]]); }
+  // --walk 1 walks, 2 runs; where the scene has a crest to follow (the night's), he keeps to it
+  L.setInput((dt) => {
+    let turn = 0;
+    clock += dt;
+    const go = walk && (!stop || clock < stop); // --stop s: he stands still after that long; --straight 1: no steering
+    if (go && L.crestX && !straight) {
+      const p = L.player.feet, want = Math.atan2(L.crestX(p.z - 10) - p.x, -10);
+      turn = Math.atan2(Math.sin(want - L.follow.yaw), Math.cos(want - L.follow.yaw));
+    }
+    // --spin r: once he has stopped he looks round, r radians a second
+    return { move: { x: 0, y: go ? 1 : 0 }, walk: walk === 1, sprint: false, strafe: false, jump: false, look: { x: -turn * Math.min(1, dt * 1.6) + (go ? 0 : spin * dt), y: 0 }, zoom: 0, device: 'keyboard' };
+  });
+  L.step(1 / 60, 30);
+}, [at, cam, Number(flag('walk', 0)), Number(flag('straight', 0)), Number(flag('stop', 0)), Number(flag('spin', 0))]);
+else await page.evaluate((from) => {
   const L = window.lab, way = L.way;
   const i0 = Math.floor(from * (way.length - 12));
   L.teleport(way[i0][0], way[i0][1], way[i0 + 6][0], way[i0 + 6][1]);

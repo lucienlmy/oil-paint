@@ -1,9 +1,11 @@
 // A wanderer in an autumn wood, painted in oils. Third person; walk, run, jump; nothing to do yet but be there.
+// Shown with ?scene=autumn (src/scenes.js).
 //   ?capture       no clock: window.lab.step(dt, n) advances it (for stills and films)
 //   ?quality=low   fewer leaves in the air, no sun in the mist
 //   ?shafts=0 ?canvas=0 ?impasto=0..2    parts of the finish, for comparing
 import * as THREE from 'three';
 import { patchBlock } from 'patch-block';
+import { SCENE, showScene } from './scenes.js';
 import recipe from '../recipe.json';
 import RAPIER from './figure/rapier/rapier.mjs';
 import { createShared, WIND } from './oilpaint/common.js';
@@ -32,10 +34,11 @@ let shown = true;
 let loaded = false;
 const block = patchBlock({
   ...recipe.block,
-  onSet() {},
+  onSet(id, value) { if (id === 'scene') showScene(value); },
   onTrigger() {},
   onVisible(visible) { shown = visible; if (loaded) run(); },
 });
+block.state({ scene: SCENE }); // the page's own control shows which picture this is
 block.progress(0.03, 'Laying the ground');
 const timings = {};
 let mark = performance.now();

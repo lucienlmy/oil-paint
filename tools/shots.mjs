@@ -35,8 +35,15 @@ export const VIEWS = {
 };
 
 // --view "x,z,fx,fz,run,dist,pitch,yaw" --name n: a view given on the command line
+// --cam "ex,eh,ez,tx,th,tz": a fixed eye eh metres above its ground, looking at a point th metres above that same ground
+// --trail "z0,z1": his tracks laid along the crest first (the night scene)
+const cam = flag('cam') ? flag('cam').split(',').map(Number) : null;
+const trail = flag('trail') ? flag('trail').split(',').map(Number) : null;
+const firstPerson = args.includes('--first'); // --first: seen through his eyes (the night scene)
+const settle = Number(flag('settle', 0)); // --settle n: this many more frames standing before the picture is taken
+const wait = Number(flag('wait', 0)); // --wait s: the clock moved on this many seconds first (the night scene)
 if (flag('view')) { const [x, z, fx, fz, run, dist, pitch, yaw] = flag('view').split(',').map(Number); VIEWS[flag('name', 'custom')] = [x, z, fx, fz, { run, dist, pitch, yaw }]; names.push(flag('name', 'custom')); }
-const root = resolve(here, 'dist');
+const root = resolve(here, flag('dist', 'dist'));
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.jpg': 'image/jpeg', '.png': 'image/png', '.glb': 'model/gltf-binary', '.wasm': 'application/wasm' };
 const server = createServer((req, res) => {
   let file = normalize(join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname)));
@@ -46,7 +53,7 @@ const server = createServer((req, res) => {
   createReadStream(file).pipe(res);
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const url = `http://127.0.0.1:${server.address().port}/?capture&nopad&${flag('query', '')}`;
+const url = `http://127.0.0.1:${server.address().port}/?capture&nopad&${/scene=/.test(flag('query', '')) ? '' : 'scene=autumn&'}${flag('query', '')}`;
 
 const exe = process.env.CHROME; // a Chromium of your own; without it, Playwright's
 const browser = await chromium.launch({ executablePath: exe, headless: true, args: ['--mute-audio', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-gpu'] });
@@ -71,9 +78,13 @@ if (args.includes('--time')) {
 for (const name of names.length ? names : Object.keys(VIEWS)) {
   const v = VIEWS[name];
   if (!v) { console.log(`no view ${name}`); continue; }
-  const info = await page.evaluate(([x, z, fx, fz, o]) => {
+  const info = await page.evaluate(([x, z, fx, fz, o, cam, trail, wait, settle, firstPerson]) => {
     const L = window.lab;
     L.view(null);
+    L.first?.(firstPerson);
+    if (wait) L.wait?.(wait);
+    if (trail) L.trail(trail[0], trail[1]);
+    if (cam) { const g = L.heightAt(cam[0], cam[2]); o = { ...o, view: [[cam[0], g + cam[1], cam[2]], [cam[3], g + cam[4], cam[5]]] }; }
     L.teleport(x, z, fx, fz);
     if (o.pitch != null) L.follow.pitch = o.pitch;
     L.follow.want = L.follow.distance = o.dist ?? 6.4;
@@ -81,10 +92,11 @@ for (const name of names.length ? names : Object.keys(VIEWS)) {
     L.setInput(() => ({ move: { x: 0, y: run > 0 ? 1 : 0 }, walk: false, sprint: false, strafe: false, jump: false, look: { x: 0, y: 0 }, zoom: 0, device: 'keyboard' }));
     L.step(1 / 60, Math.round(Math.max(run, 0.5) * 60));
     if (o.yaw) { L.follow.yaw += o.yaw; L.step(1 / 60, 20); }
+    if (settle) { L.setInput(() => ({ move: { x: 0, y: 0 }, walk: false, sprint: false, strafe: false, jump: false, look: { x: 0, y: 0 }, zoom: 0, device: 'keyboard' })); L.step(1 / 60, settle); }
     if (o.view) { L.view(o.view[0], o.view[1]); L.step(1 / 60, 2); }
     const p = L.player.feet;
     return { at: [p.x.toFixed(1), p.y.toFixed(2), p.z.toFixed(1)], mode: L.player.mode, speed: L.player.speed.toFixed(2) };
-  }, v);
+  }, [...v, cam, trail, wait, settle, firstPerson]);
   await page.screenshot({ path: join(out, `${name}.png`) });
   console.log(`shot ${name}`, JSON.stringify(info));
 }

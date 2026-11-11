@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { dabMaterial, dabGeometry, dabMesh } from './dabs.js';
 
 /**
- * palettes: [[light, half-tone, shade], ...]. parts: [{ mesh, count, accept(p), style(p, n) -> { pal, size: [across, along], dir } }],
+ * palettes: [[light, half-tone, shade, (its own colour, for a lamp's light)], ...]. parts: [{ mesh, count, accept(p), style(p, n) -> { pal, size: [across, along], dir } }],
  * where p and n are a point of the mesh and its normal in the pose it was made in.
  */
 export function pinDabs(shared, palettes, parts) {
@@ -49,7 +49,8 @@ export function pinDabs(shared, palettes, parts) {
       in vec3 aPos; in vec3 aDir; in vec3 aNrm; in vec4 aData;
       const vec3 FIG_L[${n}] = vec3[${n}](${list(0)});
       const vec3 FIG_M[${n}] = vec3[${n}](${list(1)});
-      const vec3 FIG_S[${n}] = vec3[${n}](${list(2)});`,
+      const vec3 FIG_S[${n}] = vec3[${n}](${list(2)});
+      const vec3 FIG_A[${n}] = vec3[${n}](${palettes.map((p) => `vec3(${(p[3] ?? p[0]).map((x) => x.toFixed(3))})`).join(', ')});`,
     body: /* glsl */ `
       void makeDab(inout Dab d) {
         vec3 Nn = normalize(aNrm);
@@ -60,9 +61,10 @@ export function pinDabs(shared, palettes, parts) {
         float lit = sunAt(aPos + Nn * 0.08) * clamp(dot(Nn, uSunDir) * 0.85 + 0.42, 0.0, 1.0);
         vec3 c = paint3(FIG_L[k], FIG_M[k], FIG_S[k], lit, r.x);
         // warm light thrown up by the leaves on the ground, cool light from the sky into the shade
-        c += vec3(0.1, 0.045, 0.0) * max(-Nn.y, 0.0) * (1.0 - lit);
+        c += uBounce * max(-Nn.y, 0.0) * (1.0 - lit);
         c = mix(c, c * vec3(0.86, 0.92, 1.18), (1.0 - lit) * max(Nn.y, 0.0) * 0.6);
         c = jitter(c, r.yzw, 0.45);
+        c += FIG_A[k] * uLampCol * lampAt(aPos, Nn);
         d.pos = aPos;
         d.dir = aDir;
         d.size = aData.yz * (0.8 + 0.45 * r.y);

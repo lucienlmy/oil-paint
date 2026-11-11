@@ -15,7 +15,7 @@ const args = process.argv.slice(2);
 const flag = (name, fallback) => { const i = args.indexOf(`--${name}`); return i >= 0 ? args[i + 1] : fallback; };
 const [width, height] = flag('size', '1920x1080').split('x').map(Number);
 const seconds = Number(flag('seconds', 8));
-const root = resolve(here, 'dist');
+const root = resolve(here, flag('dist', 'dist'));
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.glb': 'model/gltf-binary', '.wasm': 'application/wasm' };
 const server = createServer((req, res) => {
   let file = normalize(join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname)));
@@ -31,7 +31,7 @@ const page = await browser.newPage({ viewport: { width, height }, deviceScaleFac
 const problems = [];
 page.on('pageerror', (e) => problems.push(e.message));
 const t0 = Date.now();
-await page.goto(`http://127.0.0.1:${server.address().port}/?nopad&clean&${flag('query', '')}`);
+await page.goto(`http://127.0.0.1:${server.address().port}/?nopad&clean&${/scene=/.test(flag('query', '')) ? '' : 'scene=autumn&'}${flag('query', '')}`);
 await page.waitForFunction(() => window.lab?.ready, null, { timeout: 120000 });
 console.log(`ready in ${Date.now() - t0} ms`);
 const result = await page.evaluate(async (seconds) => {

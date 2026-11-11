@@ -69,6 +69,14 @@ export function createShared() {
     uHaze: { value: new THREE.Color(0.6, 0.6, 0.67) },
     uHazeSun: { value: new THREE.Color(1.0, 0.89, 0.62) },
     uHazeDensity: { value: 0.0105 },
+    uHazeGlow: { value: new THREE.Color(0.1, 0.08, 0.02) }, // what the air adds right round the sun
+    uShadeBias: { value: 0.0009 }, // how far a spot must be behind the still world's shade to be in it
+    uBounce: { value: new THREE.Color(0.1, 0.045, 0.0) }, // light the ground throws up into a figure's shade
+    uLamp: { value: new THREE.Vector4(0, 0, 0, 0) }, // a light carried through the picture: where, and how strong (0: none)
+    uLampCol: { value: new THREE.Color(1.0, 0.62, 0.25) },
+    // the glaze a moving thing's shadow lays over the ground: the paint times the first, plus the second
+    uGlazeMul: { value: new THREE.Color(0.5, 0.38, 0.46) },
+    uGlazeAdd: { value: new THREE.Color(0.03, 0.02, 0.06) },
     uImpasto: { value: 1 },
     uFocus: { value: new THREE.Vector3() }, // where the wanderer stands
   };
@@ -94,6 +102,13 @@ uniform mat4 uFigShadeMat;
 uniform vec3 uHaze;
 uniform vec3 uHazeSun;
 uniform float uHazeDensity;
+uniform vec3 uHazeGlow;
+uniform float uShadeBias;
+uniform vec3 uBounce;
+uniform vec4 uLamp;
+uniform vec3 uLampCol;
+uniform vec3 uGlazeMul;
+uniform vec3 uGlazeAdd;
 uniform float uImpasto;
 uniform vec3 uFocus;
 
@@ -130,7 +145,7 @@ float gustAt(vec2 xz) {
 float woodSunAt(vec3 world) {
   vec4 t = uTreeShadeMat * vec4(world, 1.0);
   float lit = smoothstep(0.56, 0.62, texture(tNoise, world.xz / 29.0).r); // beyond the picture of the shade: patches
-  if (t.x > 0.0 && t.x < 1.0 && t.y > 0.0 && t.y < 1.0 && t.z < 1.0) lit = texture(tTreeShade, vec3(t.xy, t.z - 0.0009));
+  if (t.x > 0.0 && t.x < 1.0 && t.y > 0.0 && t.y < 1.0 && t.z < 1.0) lit = texture(tTreeShade, vec3(t.xy, t.z - uShadeBias));
   return lit;
 }
 // The wanderer's own shadow moves all the time (he breathes, his cloak blows), so it is read soft: a few looks
@@ -172,7 +187,16 @@ vec3 jitter(vec3 c, vec3 r, float amount) {
 vec3 airColour(vec3 v) {
   float sunward = max(dot(v, uSunDir), 0.0);
   vec3 air = mix(uHaze, uHazeSun, sunward * sunward);
-  return air + vec3(0.1, 0.08, 0.02) * pow(sunward, 12.0);
+  return air + uHazeGlow * pow(sunward, 12.0);
+}
+
+// A light carried through the picture, a lantern: how much of it falls on a spot that faces n. Add
+// (the thing's own colour) * uLampCol * lampAt. It is nothing while uLamp.w is 0.
+float lampAt(vec3 world, vec3 n) {
+  vec3 to = uLamp.xyz - world;
+  float d2 = dot(to, to);
+  float face = clamp(dot(n, to) * inversesqrt(d2 + 1e-4) * 0.7 + 0.4, 0.0, 1.0);
+  return uLamp.w * face / (1.0 + d2 * 0.2);
 }
 float mistBetween(vec3 world) {
   vec3 d = world - cameraPosition;

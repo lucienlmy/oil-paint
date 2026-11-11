@@ -3,7 +3,11 @@ dist/
 shots/*
 !shots/readme.jpg
 !shots/cover.jpg
+!shots/autumn.jpg
+!shots/cabin.jpg
 *.mp4
 *.log
 .env
 .test/
+dist-night/
+.night-build.log

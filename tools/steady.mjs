@@ -34,7 +34,7 @@ const browser = await chromium.launch({ executablePath: exe, headless: true, arg
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
 page.on('pageerror', (e) => console.log('pageerror', e.message));
 page.on('console', (m) => { if (m.type() === 'error' && !/404/.test(m.text())) console.log('error', m.text().slice(0, 900)); });
-await page.goto(`http://127.0.0.1:${server.address().port}/?capture&nopad&${flag('query', '')}`);
+await page.goto(`http://127.0.0.1:${server.address().port}/?capture&nopad&${/scene=/.test(flag('query', '')) ? '' : 'scene=autumn&'}${flag('query', '')}`);
 await page.waitForFunction(() => window.lab?.ready, null, { timeout: 120000 });
 const input = (y) => page.evaluate((y) => window.lab.setInput(() => ({ move: { x: 0, y }, walk: true, sprint: false, strafe: false, jump: false, look: { x: 0, y: 0 }, zoom: 0, device: 'keyboard' })), y);
 const step = (n) => page.evaluate((n) => window.lab.step(1 / 60, n), n);
