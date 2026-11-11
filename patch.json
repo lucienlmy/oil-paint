@@ -1,7 +1,7 @@
 {
 	"project": "blendi/oil-paint",
-	"version": "1.0.0",
-	"channel": "private",
+	"version": "1.0.1",
+	"channel": "public",
 	"files": "dist",
 	"recipe": {
 		"mode": "browser",
