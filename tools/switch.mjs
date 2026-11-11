@@ -1,6 +1,6 @@
-// Checks the scene switch as Patch's page would use it (build first: npm run build). A stand-in page holds the demo
-// in a frame, says hello, waits for ready, sets the Scene control to the other picture, and waits for the demo to
-// come back ready and say which picture it now shows. Then the same by the on-page button. Headless and muted.
+// Checks the scene switch inside a page that holds the demo in a frame, as Patch's does (build first: npm run
+// build): the demo opens on the aurora, each button on the page loads the other picture, and each time the demo
+// comes back ready. Headless and muted.
 //   node tools/switch.mjs
 import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
@@ -15,10 +15,9 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'applic
 const HOST = `<!doctype html><meta charset="utf-8"><body style="margin:0"><iframe id="demo" src="/index.html?nopad" style="border:0;width:1280px;height:720px"></iframe><script>
   const frame = document.getElementById('demo'), log = [];
   window.log = log;
-  addEventListener('message', (e) => { if (e.data?.channel === 'patch-block' && e.data.type !== 'stats') log.push({ type: e.data.type, scene: e.data.values?.scene }); });
+  addEventListener('message', (e) => { if (e.data?.channel === 'patch-block' && e.data.type !== 'stats') log.push({ type: e.data.type }); });
   const hello = () => frame.contentWindow.postMessage({ channel: 'patch-block', type: 'hello' }, '*');
   frame.addEventListener('load', hello);
-  window.set = (value) => frame.contentWindow.postMessage({ channel: 'patch-block', type: 'set', id: 'scene', value }, '*');
 </script>`;
 const server = createServer((req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
@@ -38,22 +37,21 @@ try {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/host`);
-  // the state that follows a ready says which picture it is
+  const demo = () => page.frames().find((f) => f.url().includes('index.html'));
+  // which picture the demo shows once it next says ready
   const shown = async (after) => {
-    await page.waitForFunction((n) => window.log.slice(n).some((m) => m.type === 'state' && m.scene), after, { timeout: 90000 });
-    return page.evaluate((n) => window.log.slice(n).find((m) => m.type === 'state' && m.scene).scene, after);
+    await page.waitForFunction((n) => window.log.slice(n).some((m) => m.type === 'ready'), after, { timeout: 90000 });
+    return demo().evaluate(() => document.documentElement.dataset.scene);
   };
   check('opens on the aurora', (await shown(0)) === 'aurora');
   let mark = await page.evaluate(() => window.log.length);
-  await page.evaluate(() => window.set('autumn'));
-  check('the Scene control opens the autumn wood', (await shown(mark)) === 'autumn');
-  const frame = page.frames().find((f) => f.url().includes('index.html'));
-  check('its address names the scene', frame.url().includes('scene=autumn'), frame.url().replace(/^.*\//, ''));
+  await demo().click('#scenes button[data-scene="autumn"]');
+  check('the button opens the autumn wood', (await shown(mark)) === 'autumn');
+  check('its address names the scene', demo().url().includes('scene=autumn'), demo().url().replace(/^.*\//, ''));
   mark = await page.evaluate(() => window.log.length);
-  await frame.click('#scenes button[data-scene="aurora"]');
-  check('the on-page button goes back to the aurora', (await shown(mark)) === 'aurora');
-  const again = page.frames().find((f) => f.url().includes('index.html'));
-  check('the button for the picture showing is marked', await again.evaluate(() => document.querySelector('#scenes button.on')?.dataset.scene === 'aurora'));
+  await demo().click('#scenes button[data-scene="aurora"]');
+  check('the other button goes back to the aurora', (await shown(mark)) === 'aurora');
+  check('the button for the picture showing is marked', await demo().evaluate(() => document.querySelector('#scenes button.on')?.dataset.scene === 'aurora'));
   check('no errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 } finally {
   await browser.close();

@@ -9,7 +9,7 @@ Draws a three.js scene as thick oil paint, stroke by stroke: every leaf, trunk, 
 
 ![A cloaked wanderer with a lantern on a snow ridge under the aurora, a horn of rock ahead](shots/readme.jpg)
 
-**In the demo:** click to look with the mouse, WASD to move, Shift to sprint, Space to jump, the wheel to step the eye back or in, H hides the hint. A gamepad works too. The two buttons in the corner (and the Scene control on Patch's page) change the picture. There is no sound.
+**In the demo:** click to look with the mouse, WASD to move, Shift to sprint, Space to jump, the wheel to step the eye back or in, H hides the hint. A gamepad works too. The two buttons in the corner change the picture. There is no sound.
 
 - **Aurora.** You start among spruces under snow, come out onto a knoll under the whole sky, and follow the crest north to a cabin at the foot of the horn. V looks through his eyes, and from the cabin's doorstep on the demo does that for you. Look up.
 - **Autumn wood.** A worn way through beech, birch and oak to a clearing.

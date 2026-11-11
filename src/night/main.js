@@ -5,7 +5,6 @@
 //   ?canvas=0 ?impasto=0..2    parts of the finish, for comparing
 import * as THREE from 'three';
 import { patchBlock } from 'patch-block';
-import { SCENE, showScene } from '../scenes.js';
 import recipe from '../../recipe.json';
 import RAPIER from '../figure/rapier/rapier.mjs';
 import { createShared, WIND } from '../oilpaint/common.js';
@@ -35,11 +34,10 @@ let shown = true;
 let loaded = false;
 const block = patchBlock({
   ...recipe.block,
-  onSet(id, value) { if (id === 'scene') showScene(value); },
+  onSet() {},
   onTrigger() {},
   onVisible(visible) { shown = visible; if (loaded) run(); },
 });
-block.state({ scene: SCENE }); // the page's own control shows which picture this is
 block.progress(0.03, 'Laying the ground');
 const timings = {};
 let mark = performance.now();

@@ -6,26 +6,7 @@
 		]
 	},
 	"block": {
-		"controls": [
-			{
-				"id": "scene",
-				"label": "Scene",
-				"hint": "Which painting to walk in. Choosing one opens it from its start.",
-				"type": "choice",
-				"options": [
-					{
-						"value": "aurora",
-						"label": "Aurora"
-					},
-					{
-						"value": "autumn",
-						"label": "Autumn wood"
-					}
-				],
-				"default": "aurora",
-				"essential": true
-			}
-		],
+		"controls": [],
 		"presets": [],
 		"triggers": []
 	}
