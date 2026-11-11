@@ -9,7 +9,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
-import { guard } from 'file:///C:/Users/drini/Patch/seeds/no-pointer-lock.mjs';
+import { guard } from './no-pointer-lock.mjs';
 
 guard(chromium);
 const here = resolve(fileURLToPath(import.meta.url), '..', '..');
@@ -33,7 +33,7 @@ const server = createServer((req, res) => {
   createReadStream(file).pipe(res);
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const exe = 'C:/Users/drini/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe';
+const exe = process.env.CHROME; // a Chromium of your own; without it, Playwright's
 const browser = await chromium.launch({ executablePath: exe, headless: true, args: ['--mute-audio', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-gpu'] });
 const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
 page.on('pageerror', (e) => console.log('pageerror', e.message));

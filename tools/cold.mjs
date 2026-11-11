@@ -15,7 +15,7 @@ const cpu = Number(flag('cpu', '4'));
 
 for (let run = 1; run <= Number(runs); run++) {
   const browser = await chromium.launch({
-    executablePath: process.env.CHROME || 'C:/Users/drini/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe',
+    executablePath: process.env.CHROME, // a Chromium of your own; without it, Playwright's
     headless: true,
     args: ['--mute-audio', '--ignore-gpu-blocklist', '--use-angle=d3d11'],
   });

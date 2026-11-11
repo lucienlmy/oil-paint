@@ -98,7 +98,7 @@ In `makeDab` you have `paint3` (the three mixes), `jitter` (broken colour), `haz
 
 ## Build
 
-`npm install`, then `npm run build`: the demo is in `dist/` with `index.html` at the top. `node tools/serve.mjs dist 5405` serves it.
+`npm install`, then `npm run build`: the demo is in `dist/` with `index.html` at the top. `node tools/serve.mjs dist 5405` serves it. The tools in `tools/` drive it headless with Playwright: set `CHROME` to a Chromium of your own if Playwright has none.
 
 ## Credits
 
