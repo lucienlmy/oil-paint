@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Oil paint</title>
+    <link rel="icon" href="data:," />
+    <style>
+      html, body { margin: 0; height: 100%; background: #1c1512; overflow: hidden; }
+      #view, #view canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+      #loading { position: fixed; inset: 0; display: grid; place-items: center; color: #d9b98a; font: 15px/1.4 Georgia, serif; letter-spacing: 0.08em; }
+      #hint { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); color: #f3e3c3; font: 14px/1.4 Georgia, serif; letter-spacing: 0.04em;
+        background: rgba(28, 20, 18, 0.55); padding: 8px 16px; border-radius: 3px; transition: opacity 2s; pointer-events: none; white-space: nowrap; }
+      #hint.faded { opacity: 0; }
+      #hint.off { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="view"></div>
+    <div id="loading">Mixing paint</div>
+    <div id="hint">Click to look · WASD move · Shift sprint · Space jump · wheel to step back</div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

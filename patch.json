@@ -1,0 +1,19 @@
+{
+	"project": "blendi/oil-paint",
+	"version": "1.0.0",
+	"channel": "private",
+	"files": "dist",
+	"recipe": {
+		"mode": "browser",
+		"test": {
+			"move_keys": [
+				"KeyW"
+			]
+		},
+		"block": {
+			"controls": [],
+			"presets": [],
+			"triggers": []
+		}
+	}
+}
