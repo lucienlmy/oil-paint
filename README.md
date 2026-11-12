@@ -97,7 +97,7 @@ For **made things** (a cabin, furniture, pots) there is a kit in `src/night/kit.
 | `src/world/` | The wood: `land.js` (ground and the way through), `floor.js` (leaf carpet, undergrowth), `forest.js` (about 3,100 trees: trunks, bark, about 570,000 leaf dabs), `sky.js`, `leaves.js` (falling), `kick.js` (kicked up) |
 | `src/figure/` | The wanderer: Patch's starter man and his movement (`man.js`, `animator.js`, `player.js`, `input.js`), his hat, and `cloak.js`, a cloth of points on threads kept off his body and under the hat's brim |
 | `src/main.js`, `src/scenes.js`, `src/boot.js` | The wood's demo; which picture is shown; the page's start |
-| `tools/` | Headless stills (`shots.mjs`), a film (`clip.mjs`), frame time (`shots.mjs --time`, `fps.mjs`), steadiness (`steady.mjs` for the ground, `jitter.mjs` for anything), the scene switch (`switch.mjs`), a first visit (`cold.mjs`) |
+| `tools/` | Headless stills (`shots.mjs`), a film (`clip.mjs`), frame time (`shots.mjs --time`, `fps.mjs`), steadiness (`steady.mjs` for the ground, `jitter.mjs` for anything), the scene switch (`switch.mjs`), a first visit (`cold.mjs`), a clip file rewritten with only what its clips use (`compact-glb.mjs`) |
 
 ## Limits
 
@@ -105,7 +105,7 @@ For **made things** (a cabin, furniture, pots) there is a kit in `src/night/kit.
 - Almost everything is opaque: there is no glass, and water is strokes that give back the sky, not a mirror of the world.
 - Textures on your models are ignored; colour comes from the palettes you give.
 - Measured only on an RTX 4090 at 1080p: about 4.5 ms a frame in the aurora, about 4.6 in the wood. `?quality=low`, or Patch's performance mode, draws less (in the aurora: fewer pixels, no veil behind the curtains, less snow in the air; in the wood: no sun in the mist, fewer falling leaves).
-- The demo downloads about 26 MB, most of it the wanderer's clips. A first visit is ready in about 9 seconds on a fast machine.
+- The demo downloads about 9 MB, 5 of it code and the rest the wanderer and his clips. A first visit is ready in about 4 seconds on a fast machine and a 30 Mbit/s line.
 - Each scene is one hour of one day. Walk off the ridge into the fjord, or more than 78 m from the way in the wood, and you are put back at the start.
 - Through his own eyes you see no body or hands.
 
