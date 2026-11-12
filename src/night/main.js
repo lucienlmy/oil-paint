@@ -69,6 +69,16 @@ shared.uRoom = { value: new THREE.Vector4(0, 0, -1, -1) };
 if (q.has('impasto')) shared.uImpasto.value = +q.get('impasto');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.3, 16000);
+// Listened for from the start, not once loaded: the page may go fullscreen while the world is still being made.
+// The frame's target joins in once it exists.
+let fitFrame = () => {};
+function fitView() {
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  fitFrame();
+}
+addEventListener('resize', fitView);
 lap('start');
 
 // what he wears by night: light, half-tone, shade under the moon, then the cloth's own colour for the lantern
@@ -139,6 +149,7 @@ tracks.lay(crestX, START.z + 16, START.z + 0.4);
 lap('figure');
 
 const frame = createFrame(renderer, shared);
+fitFrame = () => frame.resize();
 frame.uniforms.uCanvas.value = q.has('canvas') ? +q.get('canvas') : 1;
 frame.uniforms.uShafts.value = 0; // no sun stands in this air
 // ?quality wins; otherwise Patch's performance mode, where there is one. Low draws at the screen's own pixels,
@@ -302,12 +313,6 @@ window.lab = {
   trail(z0, z1) { tracks.lay(crestX, z0, z1); },
 };
 
-addEventListener('resize', () => {
-  renderer.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  frame.resize();
-});
 say(0.68, 'Mixing paint');
 function gpuDone() {
   const gl = renderer.getContext();
@@ -352,6 +357,7 @@ if (!capture) {
   addEventListener('keydown', (e) => { if (e.code === 'KeyH') hint.classList.toggle('off'); });
   setTimeout(() => hint.classList.add('faded'), 9000);
 }
+fitView();
 loaded = true;
 run();
 document.getElementById('loading')?.remove();

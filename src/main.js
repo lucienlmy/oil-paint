@@ -54,6 +54,16 @@ shared.tBrush.value = createBrushSheet();
 if (q.has('impasto')) shared.uImpasto.value = +q.get('impasto');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.2, 2000);
+// Listened for from the start, not once loaded: the page may go fullscreen while the world is still being made.
+// The frame's target joins in once it exists.
+let fitFrame = () => {};
+function fitView() {
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  fitFrame();
+}
+addEventListener('resize', fitView);
 lap('start');
 // the wanderer's files are the large ones: they start coming down now, while the wood is made
 let told = 0;
@@ -101,6 +111,7 @@ physics.step();
 lap('figure');
 
 const frame = createFrame(renderer, shared);
+fitFrame = () => frame.resize();
 frame.uniforms.uCanvas.value = q.has('canvas') ? +q.get('canvas') : 1;
 /** Low quality drops the sun in the mist and most of the falling leaves. */
 function applyQuality() {
@@ -190,12 +201,6 @@ window.lab = {
   view(eye, target) { follow.free = eye ? { position: new THREE.Vector3(...eye), target: new THREE.Vector3(...target) } : null; },
 };
 
-addEventListener('resize', () => {
-  renderer.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  frame.resize();
-});
 // --- warming up: every shader is built and drawn once, and the GPU has caught up, before anyone is let in ---
 say(0.68, 'Mixing paint');
 /** Resolves when the GPU has done everything it has been sent: JavaScript finishing isn't the GPU finishing. */
@@ -242,6 +247,7 @@ if (!capture) {
   addEventListener('keydown', (e) => { if (e.code === 'KeyH') hint.classList.toggle('off'); });
   setTimeout(() => hint.classList.add('faded'), 9000);
 }
+fitView();
 loaded = true;
 run();
 document.getElementById('loading')?.remove();
